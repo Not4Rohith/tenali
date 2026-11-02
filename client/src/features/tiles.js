@@ -108,10 +108,12 @@ export const TILES = [
     { key: 'equation-crafting-lab', name: '⚗️ Equation Crafting Lab', subtitle: 'Build expressions in the mixing pot', color: 'orange', category: 'algebra' },
     { key: 'contrastlist', name: 'Contrast Challenge', subtitle: 'Distinguish similar concepts', color: 'featured', category: 'shelf' },
     { key: 'pathmap', name: '📍 Learning Path', subtitle: 'Prerequisite graph & personalized path', color: 'orange', category: 'shelf' },
+    { key: 'maze', name: '🐍 BODMAS Snake Maze', subtitle: 'Navigate the order of operations maze', color: 'emerald', category: 'number-foundations' },
 ]
 
 // Hamburger-only entries (#190). Data only -- composition stays in App.jsx.
 export const FEATURED_TILES = [
+    { key: 'maze', name: '🐍 BODMAS Snake Maze', subtitle: 'Order of Operations Interactive Maze', color: 'featured' },
     { key: 'randommix', name: 'Random Mix', subtitle: 'Adaptive cross-topic quiz', color: 'featured' },
     { key: 'custom', name: 'Custom Lesson', subtitle: 'Build your own mixed quiz', color: 'featured' },
     { key: 'gym', name: 'Gym', subtitle: 'Adaptive workout across all 7 gym puzzles', color: 'featured' },

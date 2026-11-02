@@ -1,0 +1,963 @@
+/* ==========================================================================
+   BODMAS Interactive Snake Maze — Hand-Drawn Reference Theme
+   Strictly restored to match the user's hand-drawn design reference:
+   - Dark charcoal/black container (#111111) with light-grey border (#D0D0D0)
+   - Large rounded corners (border-radius: 24px)
+   - Left Section (~72%): Large centered blue expression (#55A5ED) + centered compact maze
+   - Right Section (~28%): Full-height vertical divider (#D0D0D0)
+     - Upper: Calculation workspace & carried value
+     - Lower: Horizontal divider + diamond directional triangle buttons (▲, ◀, ▼, ▶) & Back button
+   ========================================================================== */
+
+:root {
+  --font-math: 'Fredoka', 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-body: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* Palette strictly matching hand-drawn reference */
+  --bg-main: #111111;
+  --bg-page: #0a0a0c;
+  --bg-maze: #000000;
+  
+  --wall-color: #D0D0D0;
+  --expr-blue: #55A5ED;
+  --text-main: #E5E5E5;
+  --text-muted: #9ca3af;
+  --text-subtle: #6b7280;
+
+  --accent-gold: #fbbf24;
+  --accent-green: #34d399;
+  --accent-red: #f87171;
+
+  --divider-color: #D0D0D0;
+  --border-subtle: rgba(208, 208, 208, 0.2);
+
+  --radius-outer: 24px;
+  --radius-inner: 14px;
+}
+
+/* ==========================================================================
+   1. ISOLATION & BUTTON RESETS (Protects from App.css global button pollution)
+   ========================================================================== */
+.snake-maze-viewport {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--bg-page);
+  padding: 12px;
+  box-sizing: border-box;
+}
+
+.snake-maze-viewport *,
+.snake-maze-viewport *::before,
+.snake-maze-viewport *::after {
+  box-sizing: border-box;
+}
+
+/* Hard reset for every button inside .snake-maze-app to neutralize App.css global rules */
+.snake-maze-app button {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-body);
+  text-align: center;
+  line-height: 1;
+  background: transparent;
+  color: inherit;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  margin: 0;
+  transition: all 0.15s ease;
+}
+
+.snake-maze-app button:focus-visible {
+  outline: 2px solid var(--expr-blue);
+  outline-offset: 2px;
+}
+
+/* ==========================================================================
+   2. OUTER GAME CONTAINER (Single rounded rectangular game container)
+   ========================================================================== */
+.snake-maze-app {
+  width: 100%;
+  max-width: 1180px;
+  height: min(94vh, 790px);
+  background-color: var(--bg-main);
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-outer);
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 73% 27%;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.85);
+}
+
+/* ==========================================================================
+   3. LEFT SECTION: Header (Expression) + Centered Maze (~73% width)
+   ========================================================================== */
+.maze-left-section {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 16px 12px;
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 0;
+  gap: 4px;
+  justify-content: space-between;
+}
+
+/* Mathematical Expression Header: Prominent chalk/sky blue centered formula */
+.handdrawn-expression-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding-bottom: 6px;
+  position: relative;
+}
+
+.header-nav-left {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-minimal-back,
+.btn-minimal-restart {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.btn-minimal-back:hover {
+  color: #ffffff;
+  border-color: var(--wall-color);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-minimal-restart {
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.35);
+  background: rgba(56, 189, 248, 0.08);
+}
+
+.btn-minimal-restart:hover {
+  color: #ffffff;
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.22);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.35);
+}
+
+.header-expression-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 62px;
+  position: relative;
+}
+
+.header-row-formula,
+.header-row-original {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  height: 38px;
+  min-height: 38px;
+  overflow: visible;
+}
+
+.header-row-sub,
+.header-row-current {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  line-height: 1.2;
+  height: 22px;
+  min-height: 22px;
+  overflow: visible;
+}
+
+.question-expr-label,
+.current-expr-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--expr-blue);
+  opacity: 0.8;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.question-expr-value,
+.current-expr-value {
+  font-family: var(--font-math);
+  font-size: 19px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.8px;
+  text-shadow: 0 0 10px rgba(85, 165, 237, 0.45);
+  display: inline-flex;
+  align-items: center;
+}
+
+.question-expr-value .glowing-bracket,
+.current-expr-value .glowing-bracket {
+  font-size: 1.05em;
+  line-height: 1;
+  vertical-align: baseline;
+}
+
+.question-expr-value .expr-term-content,
+.current-expr-value .expr-term-content {
+  font-size: inherit;
+  font-weight: inherit;
+  padding: 0;
+}
+
+.expression-formula {
+  font-family: var(--font-math);
+  font-size: 34px;
+  font-weight: 700;
+  color: var(--expr-blue);
+  letter-spacing: 2px;
+  text-shadow: 0 0 12px rgba(85, 165, 237, 0.35);
+  display: inline-flex;
+  align-items: center;
+}
+
+.expr-main-text {
+  display: inline-flex;
+  align-items: center;
+  white-space: pre;
+}
+
+/* Bracketed Expression Terms imitating the mini-expression state */
+.expr-term-bracketed {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  vertical-align: baseline;
+}
+
+.expr-term-content {
+  color: #ffffff;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  padding: 0;
+}
+
+.expr-term-bracketed.solved .expr-term-content {
+  color: #e0f2fe;
+  text-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+}
+
+.expr-term-solved {
+  color: #e0f2fe;
+  font-weight: 700;
+}
+
+.expr-term-bracketed.approaching .expr-term-content {
+  color: #ffffff;
+  text-shadow: 0 0 12px rgba(85, 165, 237, 0.8);
+}
+
+/* Glowing Brackets imitating mini-expression parentheses */
+.glowing-bracket {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-math);
+  font-weight: 700;
+  font-size: 1.05em;
+  line-height: 1;
+  user-select: none;
+  vertical-align: baseline;
+  transition: text-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.glowing-bracket.left {
+  margin-right: 1px;
+}
+
+.glowing-bracket.right {
+  margin-left: 1px;
+}
+
+/* Approaching Glowing Brackets: Vivid Electric Blue / Cyan Neon Pulse */
+.glowing-bracket.pulse-bracket {
+  color: #38bdf8;
+  text-shadow: 
+    0 0 5px #38bdf8,
+    0 0 12px rgba(56, 189, 248, 0.95),
+    0 0 20px rgba(14, 165, 233, 0.8);
+  animation: pulseGlowingBracket 1.1s ease-in-out infinite alternate;
+}
+
+/* Solved Glowing Brackets: Crisp Emerald / Cyan Glow */
+.glowing-bracket.solved-bracket {
+  color: #38bdf8;
+  text-shadow: 
+    0 0 4px #38bdf8,
+    0 0 10px rgba(56, 189, 248, 0.8),
+    0 0 18px rgba(14, 165, 233, 0.5);
+}
+
+@keyframes pulseGlowingBracket {
+  from {
+    filter: brightness(1);
+    text-shadow: 
+      0 0 4px #38bdf8,
+      0 0 10px rgba(56, 189, 248, 0.85);
+  }
+  to {
+    filter: brightness(1.25);
+    text-shadow: 
+      0 0 7px #7dd3fc,
+      0 0 16px rgba(56, 189, 248, 1),
+      0 0 24px rgba(14, 165, 233, 0.85);
+  }
+}
+
+.goal-badge-minimal {
+  font-family: var(--font-math);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent-gold);
+  background: rgba(251, 191, 36, 0.15);
+  border: 1px solid var(--accent-gold);
+  border-radius: 6px;
+  padding: 1px 8px;
+}
+
+/* =========================================================================
+   CONFLICT FLIGHT ANIMATION & PROVENANCE WARNING STYLES
+   ========================================================================= */
+.conflict-flying-badge-wrapper {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.conflict-flying-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #0f172a;
+  font-family: var(--font-math);
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: 0.5px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  border: 1.5px solid #fef3c7;
+  box-shadow: 
+    0 0 16px rgba(245, 158, 11, 0.9),
+    0 4px 14px rgba(0, 0, 0, 0.6);
+  animation: flyConflictBadge 1.4s cubic-bezier(0.2, 0.8, 0.25, 1) forwards;
+}
+
+.conflict-flying-badge .badge-op-label {
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.conflict-flying-badge .badge-arrow {
+  color: #78350f;
+  font-weight: 900;
+  font-size: 13px;
+}
+
+.conflict-flying-badge .badge-res-val {
+  color: #ffffff;
+  background: #78350f;
+  padding: 1px 7px;
+  border-radius: 8px;
+  font-weight: 800;
+}
+
+@keyframes flyConflictBadge {
+  0% {
+    transform: translate(-50%, 14px) scale(0.85);
+    opacity: 0;
+    filter: brightness(1.3);
+  }
+  20% {
+    transform: translate(-50%, 10px) scale(1.08);
+    opacity: 1;
+    filter: brightness(1.1);
+  }
+  65% {
+    transform: translate(-50%, -10px) scale(1.15);
+    opacity: 1;
+    filter: drop-shadow(0 0 12px #f59e0b);
+  }
+  85% {
+    transform: translate(-50%, -16px) scale(1.02);
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate(-50%, -22px) scale(0.9);
+    opacity: 0;
+  }
+}
+
+/* Conflict Source Terms in QUESTION Row */
+.expr-term-bracketed.conflict-source {
+  color: #fbbf24;
+}
+
+.glowing-bracket.conflict-bracket {
+  color: #f59e0b;
+  text-shadow: 
+    0 0 6px #f59e0b,
+    0 0 14px rgba(245, 158, 11, 0.95);
+  animation: pulseConflictBracket 0.75s ease-in-out infinite alternate;
+}
+
+.conflict-source-text {
+  color: #fbbf24;
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.7);
+  font-weight: 700;
+}
+
+/* Conflict Target Term in Live Working Formula Row */
+.expr-term-bracketed.conflict-target {
+  color: #fef08a;
+}
+
+.glowing-bracket.conflict-target-bracket {
+  color: #fbbf24;
+  text-shadow: 
+    0 0 8px #fbbf24,
+    0 0 18px rgba(251, 191, 36, 1);
+  animation: pulseConflictBracket 0.75s ease-in-out infinite alternate;
+}
+
+.conflict-target-text {
+  color: #fef08a;
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.8);
+  font-weight: 800;
+}
+
+@keyframes pulseConflictBracket {
+  from {
+    filter: brightness(1);
+    text-shadow: 0 0 6px #f59e0b, 0 0 12px rgba(245, 158, 11, 0.8);
+  }
+  to {
+    filter: brightness(1.3);
+    text-shadow: 0 0 10px #fbbf24, 0 0 20px rgba(245, 158, 11, 1);
+  }
+}
+
+/* Station Shake on Conflict Block */
+.station-group.station-conflict-blocked {
+  animation: stationConflictShake 0.45s ease-in-out;
+}
+
+@keyframes stationConflictShake {
+  0%, 100% { transform: translate(0, 0); }
+  20%, 60% { transform: translate(-3.5px, 0); }
+  40%, 80% { transform: translate(3.5px, 0); }
+}
+
+/* Defunct / Greyed Out Stations on Conflicting Routes */
+.station-group.station-defunct {
+  opacity: 0.92;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+  transition: all 0.3s ease;
+}
+
+.station-group.station-defunct rect {
+  fill: #1e293b !important;
+  stroke: #64748b !important;
+  stroke-dasharray: 4 3;
+}
+
+.station-group.station-defunct text {
+  fill: #cbd5e1 !important;
+  opacity: 0.95 !important;
+  letter-spacing: 0.4px;
+}
+
+.header-nav-right {
+  flex: 0 0 120px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.minimal-select {
+  background: #1a1a1f;
+  color: var(--text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 11.5px;
+  outline: none;
+  cursor: pointer;
+  max-width: 120px;
+}
+
+/* Subtle status banner */
+.status-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+  min-height: 20px;
+}
+
+.status-text {
+  text-align: center;
+}
+
+/* Prominent, Responsive Maze Area eliminating dead whitespace */
+.maze-wrapper-centered {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+}
+
+.maze-canvas-container {
+  width: 100%;
+  max-width: 820px;
+  height: 100%;
+  max-height: calc(100% - 2px);
+  aspect-ratio: 17 / 10;
+  background-color: #090d16;
+  border: 1.8px solid rgba(85, 165, 237, 0.4);
+  border-radius: var(--radius-inner);
+  overflow: hidden;
+  box-shadow: 
+    0 12px 32px rgba(0, 0, 0, 0.8),
+    0 0 16px rgba(85, 165, 237, 0.15),
+    inset 0 0 24px rgba(0, 0, 0, 0.7);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.maze-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ==========================================================================
+   4. RIGHT PANEL: Separated by thin vertical light-grey divider (~28% width)
+   ========================================================================== */
+.game-right-panel {
+  display: flex;
+  flex-direction: column;
+  border-left: 1.8px solid var(--divider-color);
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 0;
+  background-color: var(--bg-main);
+  justify-content: space-between;
+}
+
+/* Upper Section: WORKING EXPRESSION Workspace */
+.right-panel-upper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 18px;
+  min-height: 0;
+  overflow-y: auto;
+  gap: 12px;
+}
+
+.calculation-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.workspace-header {
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 6px;
+}
+
+.workspace-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Carried Value Status */
+.carried-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
+.carried-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.carried-icon {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.carried-value-pill {
+  font-family: var(--font-math);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent-gold);
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  padding: 1px 8px;
+  border-radius: 4px;
+}
+
+/* Vertical Working Expression Reduction Sequence */
+.working-expression-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 10px 12px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.timeline-node {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.timeline-separator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 18px;
+  color: var(--text-subtle);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.arrow-down {
+  font-weight: 700;
+  color: var(--expr-blue);
+  opacity: 0.7;
+}
+
+.reduction-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.reduction-card.latest-prominent {
+  background: rgba(85, 165, 237, 0.14);
+  border: 1px solid rgba(85, 165, 237, 0.4);
+  box-shadow: 0 0 10px rgba(85, 165, 237, 0.2);
+}
+
+.reduction-card.past-faded {
+  background: transparent;
+  opacity: 0.55;
+}
+
+.card-tag {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.reduction-card.latest-prominent .card-tag {
+  color: var(--expr-blue);
+}
+
+.card-expression {
+  font-family: var(--font-math);
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: 0.5px;
+}
+
+.reduction-card.latest-prominent .card-expression {
+  font-size: 16px;
+  color: #ffffff;
+  text-shadow: 0 0 10px rgba(85, 165, 237, 0.4);
+}
+
+/* Outcome alerts */
+.workspace-alert {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.workspace-alert.success {
+  background: rgba(52, 211, 153, 0.1);
+  border: 1px solid var(--accent-green);
+  color: var(--accent-green);
+}
+
+.workspace-alert.deadend {
+  background: rgba(248, 113, 113, 0.1);
+  border: 1px solid var(--accent-red);
+  color: #fca5a5;
+}
+
+.workspace-alert .alert-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.workspace-alert .alert-sub {
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--accent-gold);
+}
+
+/* ==========================================================================
+   5. LOWER SECTION: Directional Triangle Controls in Diamond Arrangement
+   Framed by horizontal divider matching hand-drawn sketch
+   ========================================================================== */
+.right-panel-lower {
+  border-top: 1.8px solid var(--divider-color);
+  padding: 14px 16px 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  background-color: var(--bg-main);
+}
+
+.handdrawn-controls-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.dpad-triangle-cluster {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.triangle-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.triangle-row.middle-row {
+  gap: 6px;
+}
+
+.cluster-spacer {
+  width: 44px;
+  height: 44px;
+}
+
+/* Triangle outline buttons matching hand-drawn reference */
+.triangle-btn {
+  width: 46px;
+  height: 46px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1.5px solid var(--wall-color);
+  border-radius: 8px;
+  color: var(--wall-color);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.12s ease;
+  padding: 0;
+}
+
+.triangle-svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+.triangle-btn:hover {
+  background: rgba(85, 165, 237, 0.18);
+  border-color: var(--expr-blue);
+  color: var(--expr-blue);
+  transform: scale(1.06);
+}
+
+.triangle-btn:active {
+  transform: scale(0.94);
+  background: rgba(85, 165, 237, 0.3);
+}
+
+/* Action row with Undo and Restart buttons below directional controls */
+.controls-action-row {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.btn-handdrawn-action {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  border: 1.2px solid rgba(255, 255, 255, 0.22);
+  border-radius: 6px;
+  padding: 5px 14px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.btn-handdrawn-action.btn-undo:hover:not(:disabled) {
+  color: #fbbf24;
+  border-color: #fbbf24;
+  background: rgba(251, 191, 36, 0.12);
+  transform: translateY(-1px);
+}
+
+.btn-handdrawn-action.btn-restart {
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.35);
+  background: rgba(56, 189, 248, 0.08);
+}
+
+.btn-handdrawn-action.btn-restart:hover {
+  color: #ffffff;
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.22);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-handdrawn-action:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  border-color: rgba(255, 255, 255, 0.08);
+  color: var(--text-subtle);
+  transform: none;
+}
+
+/* Quick Restart / Play Again buttons in alerts */
+.btn-alert-action {
+  margin-top: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+}
+
+.btn-alert-action.btn-alert-success {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: #10b981;
+  color: #34d399;
+}
+
+.btn-alert-action.btn-alert-success:hover {
+  background: rgba(16, 185, 129, 0.35);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-alert-action.btn-alert-deadend {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+  color: #fca5a5;
+}
+
+.btn-alert-action.btn-alert-deadend:hover {
+  background: rgba(239, 68, 68, 0.35);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+  transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   6. RESPONSIVE LAYOUT
+   ========================================================================== */
+@media (max-width: 900px) {
+  .snake-maze-app {
+    grid-template-columns: 1fr;
+    height: auto;
+    max-height: none;
+    overflow-y: auto;
+  }
+  .game-right-panel {
+    border-left: none;
+    border-top: 1.8px solid var(--divider-color);
+  }
+}
