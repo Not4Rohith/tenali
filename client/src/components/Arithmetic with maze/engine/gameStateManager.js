@@ -552,9 +552,28 @@ export function moveSnake(state, direction) {
     // Reached natural dead-end wall
     isAtDeadEnd = true;
     newStatus = 'DEAD_END';
-    const deadEndLoc = mazeGrid.deadEndLocations?.find(d => d.c === nextCell.c && d.r === nextCell.r);
-    const resultVal = newCarriedValues.length > 0 ? newCarriedValues[0] : newCarriedValue;
-    deadEndReason = deadEndLoc?.mathQuestion || deadEndLoc?.reason || `🤔 We got ${resultVal}, but our target is ${expression.targetResult}! In BODMAS, which operation should we solve first?`;
+    const target = expression.targetResult;
+
+    // Dynamically retrieve the child's current evaluated value or carried number
+    const latestTrace = updatedCalculation.reductionTrace?.[updatedCalculation.reductionTrace.length - 1];
+    const isTraceNumber = latestTrace !== undefined && latestTrace !== null && latestTrace !== '' && !isNaN(Number(latestTrace));
+
+    let resultVal = null;
+    if (isTraceNumber) {
+      resultVal = latestTrace;
+    } else if (newCarriedValues.length > 0) {
+      resultVal = newCarriedValues[newCarriedValues.length - 1];
+    } else if (updatedCalculation.completedOperations?.length > 0) {
+      resultVal = updatedCalculation.completedOperations[updatedCalculation.completedOperations.length - 1].result;
+    } else if (snake.carriedValue !== null && snake.carriedValue !== undefined) {
+      resultVal = snake.carriedValue;
+    }
+
+    if (resultVal !== null && resultVal !== undefined) {
+      deadEndReason = `🤔 Got ${resultVal}, but target is ${target}! Try another path.`;
+    } else {
+      deadEndReason = `🤔 Dead end! Target is ${target}. Try another path.`;
+    }
     newMessage = deadEndReason;
   }
 

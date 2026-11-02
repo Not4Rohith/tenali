@@ -39,14 +39,14 @@
       2. `( ) × (3)` at `(1, 7)` $\rightarrow$ computes `8 × 3 = 24`
       3. `( ) − (10)` at `(3, 8)` $\rightarrow$ computes `24 − 10 = 14`
       4. `( ) ÷ (2)` at `(5, 7)` $\rightarrow$ computes `14 ÷ 2 = 7`
-      5. **Dead-End Wall 1 at `(6, 6)`**: Displays kid-friendly math prompt: *"🤔 We got 7, but our target is 13! In BODMAS, which comes first: (×) multiplication or (+) addition?"*
+      5. **Dead-End Wall 1 at `(6, 6)`**: Displays short dynamic prompt: *"🤔 Got {currentVal}, but target is {targetResult}! Try another path."*
     - **Dead State 2 (Premature Addition before Division Trap)**:
       1. Player evaluates `5 × 3 = 15` at `(9, 2)`
       2. Rather than dividing `10 ÷ 2 = 5`, player prematurely adds `3 + 15 = 18` at `(13, 2)`
       3. `(18) − (10) = 8` at `(15, 3)`
       4. `(8) ÷ (2) = 4` at `(13, 4)`
-      5. **Dead-End Wall 2 at `(15, 5)`**: Displays kid-friendly math prompt: *"🤔 We got 4, but our target is 13! In BODMAS, which comes first: (÷) division or (+) addition?"*
-  - Instead of robotic game instructions ("Move backwards along corridor to retrace"), the child is prompted with a simple mathematical question that highlights operator precedence and invites reflection.
+      5. **Dead-End Wall 2 at `(15, 5)`**: Displays short dynamic prompt: *"🤔 Got {currentVal}, but target is {targetResult}! Try another path."*
+  - Instead of long, intimidating paragraphs, the child receives a short, dynamic mathematical prompt stating what they currently reached and what target is needed.
 
 ### Problem 3 Solved: Multi-Value Feeder Loop (No Self-Trapping)
 - **The Issue**: To solve `( ) − ( )`, the snake needs both `5 × 3 = 15` and `10 ÷ 2 = 5`. In a single corridor, visiting one and turning around forces self-collision with the snake's own body.

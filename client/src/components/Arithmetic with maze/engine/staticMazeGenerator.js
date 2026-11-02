@@ -178,7 +178,7 @@ export function generateRandomStaticMaze(selectedRoutesData, options = {}) {
   carve(6, 7, 6, 6);
   const deadEndPos = { c: 6, r: 6 };
   cells[deadEndPos.c][deadEndPos.r].isDeadEnd = true;
-  cells[deadEndPos.c][deadEndPos.r].deadEndReason = `🤔 We got 7, but our target is ${targetResult}! In BODMAS, which comes first: (×) multiplication or (+) addition?`;
+  cells[deadEndPos.c][deadEndPos.r].deadEndReason = null;
 
   // -------------------------------------------------------------------------
   // 4. CARVE DEAD STATE 2 (UPPER-RIGHT EAST SUB-MAZE - NEW!)
@@ -191,7 +191,7 @@ export function generateRandomStaticMaze(selectedRoutesData, options = {}) {
   carve(13, 5, 15, 5);
   const deadEndPos2 = { c: 15, r: 5 };
   cells[deadEndPos2.c][deadEndPos2.r].isDeadEnd = true;
-  cells[deadEndPos2.c][deadEndPos2.r].deadEndReason = `🤔 We got 4, but our target is ${targetResult}! In BODMAS, which comes first: (÷) division or (+) addition?`;
+  cells[deadEndPos2.c][deadEndPos2.r].deadEndReason = null;
 
   // -------------------------------------------------------------------------
   // 5. DENSE PROCEDURAL MAZE EXPANSION ACROSS ZONE 1
@@ -433,16 +433,12 @@ export function generateRandomStaticMaze(selectedRoutesData, options = {}) {
     {
       c: deadEndPos.c,
       r: deadEndPos.r,
-      routeId: 'route_distractor_1',
-      mathQuestion: `🤔 We got 7, but our target is ${targetResult}! In BODMAS, which comes first: (×) multiplication or (+) addition?`,
-      reason: `🤔 We got 7, but our target is ${targetResult}! In BODMAS, which comes first: (×) multiplication or (+) addition?`
+      routeId: 'route_distractor_1'
     },
     {
       c: deadEndPos2.c,
       r: deadEndPos2.r,
-      routeId: 'route_distractor_2',
-      mathQuestion: `🤔 We got 4, but our target is ${targetResult}! In BODMAS, which comes first: (÷) division or (+) addition?`,
-      reason: `🤔 We got 4, but our target is ${targetResult}! In BODMAS, which comes first: (÷) division or (+) addition?`
+      routeId: 'route_distractor_2'
     }
   ];
 
