@@ -19,6 +19,8 @@ export function ExpressionHeader({
   status,
   onBack,
   onReset,
+  onUndo,
+  canUndo = false,
   conflictAnimation = null
 }) {
   const currentWorkingExpression =
@@ -118,6 +120,25 @@ export function ExpressionHeader({
             title="Return to Menu"
           >
             ← Back
+          </button>
+        )}
+        {onUndo && (
+          <button
+            onClick={onUndo}
+            disabled={!canUndo}
+            className="btn-minimal-undo"
+            title="Undo Step (Z or Backspace)"
+          >
+            ↶ Undo
+          </button>
+        )}
+        {onReset && (
+          <button
+            onClick={onReset}
+            className="btn-minimal-restart"
+            title="Restart Challenge (Press 'R')"
+          >
+            ↺ Restart
           </button>
         )}
       </div>

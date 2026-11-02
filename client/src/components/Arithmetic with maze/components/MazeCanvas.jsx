@@ -12,8 +12,111 @@ import { isStationDefunct } from '../engine/gameStateManager.js';
  * - Natural dead-end corridors and Goal destination star
  * - Zero artificial gates, zero lock icons, zero dynamic overlays
  * - Animated snake navigating corridor centerlines
+/**
+ * Finds the immediate next step direction from snake's head towards clicked cell (targetC, targetR)
+ * using BFS through walkable carved maze corridors.
  */
-export function MazeCanvas({ mazeGraph, snake, calculation, mazeState, nearbyStation, conflictAnimation = null }) {
+function getNextStepDirection(grid, startC, startR, targetC, targetR, snakeSegments = []) {
+  if (!grid || !grid.cells) return null;
+  if (startC === targetC && startR === targetR) return null;
+
+  const targetCell = grid.cells[targetC]?.[targetR];
+  if (!targetCell || !targetCell.isCarved) return null;
+
+  const queue = [{ c: startC, r: startR, firstDir: null }];
+  const visited = new Set([`${startC},${startR}`]);
+
+  const DIRS = [
+    { dir: 'UP', dc: 0, dr: -1 },
+    { dir: 'RIGHT', dc: 1, dr: 0 },
+    { dir: 'DOWN', dc: 0, dr: 1 },
+    { dir: 'LEFT', dc: -1, dr: 0 }
+  ];
+
+  while (queue.length > 0) {
+    const { c, r, firstDir } = queue.shift();
+    if (c === targetC && r === targetR) {
+      return firstDir;
+    }
+
+    const currentCell = grid.cells[c]?.[r];
+    if (!currentCell || !currentCell.isCarved) continue;
+
+    for (const { dir, dc, dr } of DIRS) {
+      const nc = c + dc;
+      const nr = r + dr;
+      const key = `${nc},${nr}`;
+      if (visited.has(key)) continue;
+
+      // Check walls
+      let blocked = false;
+      if (dir === 'UP') blocked = currentCell.walls.top;
+      else if (dir === 'DOWN') blocked = currentCell.walls.bottom;
+      else if (dir === 'LEFT') blocked = currentCell.walls.left;
+      else if (dir === 'RIGHT') blocked = currentCell.walls.right;
+      if (blocked) continue;
+
+      const nextCell = grid.cells[nc]?.[nr];
+      if (!nextCell || !nextCell.isCarved) continue;
+
+      // Check snake body collision
+      const isBody = snakeSegments.some(seg => seg.c === nc && seg.r === nr);
+      if (isBody) continue;
+
+      visited.add(key);
+      queue.push({
+        c: nc,
+        r: nr,
+        firstDir: firstDir || dir
+      });
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Determines whether a mathematical station should be visible to the child.
+ * Progressive fog-of-war:
+ * - Opening stations (no prerequisite) are visible at start.
+ * - Stations whose prerequisite station is solved become revealed.
+ * - Already solved stations remain visible.
+ * - Stations within close proximity (Manhattan distance <= 2) to the snake reveal.
+ */
+function isStationVisible(station, solvedStationIds = [], snake = null) {
+  if (!station) return false;
+
+  // 1. Solved stations always stay visible
+  if (solvedStationIds.includes(station.id)) return true;
+
+  // 2. Opening stations (prerequisiteStationId is null) are visible at start
+  if (station.isOpeningState || station.prerequisiteStationId === null || station.prerequisiteStationId === undefined) {
+    return true;
+  }
+
+  // 3. Revealed when its prerequisite station is solved
+  if (station.prerequisiteStationId && solvedStationIds.includes(station.prerequisiteStationId)) {
+    return true;
+  }
+
+  // 4. Proximity reveal if the snake is physically exploring near this corridor
+  if (snake) {
+    const dist = Math.abs(snake.c - station.c) + Math.abs(snake.r - station.r);
+    if (dist <= 2) return true;
+  }
+
+  return false;
+}
+
+export function MazeCanvas({
+  mazeGraph,
+  snake,
+  calculation,
+  mazeState,
+  nearbyStation,
+  conflictAnimation = null,
+  onMove = null
+}) {
   const grid = mazeGraph;
   const { width, height, cellSize, wallLines, startPos, finishPos, stationsByPos } = grid;
 
@@ -23,12 +126,39 @@ export function MazeCanvas({ mazeGraph, snake, calculation, mazeState, nearbySta
   const finishX = finishPos.c * cellSize + cellSize / 2;
   const finishY = finishPos.r * cellSize + cellSize / 2;
 
+  // Mouse / Tap Click Navigation Handler
+  const handleSvgClick = (e) => {
+    if (!onMove) return;
+    const svg = e.currentTarget;
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX;
+    pt.y = e.clientY;
+    const svgP = pt.matrixTransform(svg.getScreenCTM().inverse());
+    const c = Math.floor(svgP.x / cellSize);
+    const r = Math.floor(svgP.y / cellSize);
+    if (c < 0 || c >= grid.cols || r < 0 || r >= grid.rows) return;
+
+    // Check adjacent first (instant single step)
+    if (c === snake.c + 1 && r === snake.r) return onMove('RIGHT');
+    if (c === snake.c - 1 && r === snake.r) return onMove('LEFT');
+    if (c === snake.c && r === snake.r + 1) return onMove('DOWN');
+    if (c === snake.c && r === snake.r - 1) return onMove('UP');
+
+    // If clicked further along the corridor, take first step towards target
+    const nextDir = getNextStepDirection(grid, snake.c, snake.r, c, r, snake.segments || []);
+    if (nextDir) {
+      onMove(nextDir);
+    }
+  };
+
   return (
     <div className="maze-canvas-container">
       <svg
         viewBox={`0 0 ${width} ${height}`}
         className="maze-svg"
         preserveAspectRatio="xMidYMid meet"
+        onClick={handleSvgClick}
+        style={{ cursor: 'pointer' }}
       >
         <defs>
           {/* Subtle glow filter for Goal star and approaching station */}
@@ -73,6 +203,9 @@ export function MazeCanvas({ mazeGraph, snake, calculation, mazeState, nearbySta
         {/* 3. Mathematical Labels Written Along Corridor Paths */}
         <g className="maze-floor-stations">
           {Object.values(stationsByPos).map((station) => {
+            const isVisible = isStationVisible(station, mazeState.solvedStationIds, snake);
+            if (!isVisible) return null;
+
             const isSolved = mazeState.solvedStationIds.includes(station.id);
             const isDefunct = !isSolved && isStationDefunct(station, calculation, grid?.expressionModel, grid);
             const isApproaching = !isDefunct && nearbyStation && nearbyStation.id === station.id;

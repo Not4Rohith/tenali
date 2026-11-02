@@ -8,7 +8,6 @@ import {
 } from './engine/gameStateManager.js';
 import { ExpressionHeader } from './components/ExpressionHeader.jsx';
 import { MazeCanvas } from './components/MazeCanvas.jsx';
-import { RightPanel } from './components/RightPanel/RightPanel.jsx';
 
 /**
  * SnakeMazeApp Component
@@ -107,8 +106,8 @@ export function SnakeMazeApp({ onBack }) {
   return (
     <div className="snake-maze-viewport">
       <div className="snake-maze-app">
-        {/* Left Section (~72%): Expression Header at top, then centered compact Maze */}
-        <section className="maze-left-section">
+        {/* Full Screen Unified Maze Experience */}
+        <section className="maze-main-section">
           <ExpressionHeader
             currentExpression={currentExpression}
             onSelectExpression={handleSelectExpression}
@@ -117,6 +116,8 @@ export function SnakeMazeApp({ onBack }) {
             status={gameState.status}
             onBack={onBack}
             onReset={handleReset}
+            onUndo={handleUndo}
+            canUndo={gameState.historyStack.length > 0}
             conflictAnimation={gameState.conflictAnimation}
           />
 
@@ -132,22 +133,10 @@ export function SnakeMazeApp({ onBack }) {
               mazeState={gameState.mazeState}
               nearbyStation={gameState.nearbyStation}
               conflictAnimation={gameState.conflictAnimation}
+              onMove={handleMove}
             />
           </div>
         </section>
-
-        {/* Right Section (~28%): Calculation Workspace (upper) & Directional Controls (lower) */}
-        <RightPanel
-          calculation={gameState.calculation}
-          snake={gameState.snake}
-          status={gameState.status}
-          message={gameState.message}
-          mazeState={gameState.mazeState}
-          onMove={handleMove}
-          onUndo={handleUndo}
-          onReset={handleReset}
-          historyCount={gameState.historyStack.length}
-        />
       </div>
     </div>
   );

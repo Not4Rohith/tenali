@@ -255,10 +255,11 @@ export function generateRandomStaticMaze(selectedRoutesData, options = {}) {
     cells[st.c][st.r].station = st;
   }
 
-  function makeStation(id, step, c, r, isTrap = false) {
+  function makeStation(id, step, c, r, isTrap = false, prerequisiteStationId = null) {
     if (!step) return null;
     const isLeftCalc = step.leftOperandType === 'calculated' || (typeof step.unsolvedLabel === 'string' && step.unsolvedLabel.startsWith('(   )'));
     const isRightCalc = step.rightOperandType === 'calculated' || (typeof step.unsolvedLabel === 'string' && step.unsolvedLabel.endsWith('(   )'));
+    const isOpening = prerequisiteStationId === null;
     return {
       id,
       opId: step.operationId,
@@ -268,6 +269,8 @@ export function generateRandomStaticMaze(selectedRoutesData, options = {}) {
       unsolvedLabel: step.unsolvedLabel,
       leftOperand: step.leftOperand,
       rightOperand: step.rightOperand,
+      prerequisiteStationId,
+      isOpeningState: isOpening,
       operation: {
         id: step.operationId,
         operator: step.operator,
@@ -306,9 +309,9 @@ export function generateRandomStaticMaze(selectedRoutesData, options = {}) {
   if (directCombiner) bestValid = directCombiner;
 
   // Stamp Valid Route in strict topological dependency order:
-  // Step 0: Feeder 1 on top corridor of Feeder Loop at (8, 2)
-  // Step 1: Feeder 2 on right corridor of Feeder Loop at (11, 4)
-  // Step 2: Bridge Doorway at (12, 6) -> combines Feeder 1 & Feeder 2 (snake holds both)
+  // Step 0: Feeder 1 on top corridor of Feeder Loop at (8, 2) [Opening Station]
+  // Step 1: Feeder 2 on right corridor of Feeder Loop at (11, 4) [Reveals after Feeder 1]
+  // Step 2: Bridge Doorway at (12, 6) -> combines Feeder 1 & Feeder 2 [Reveals after Feeder 2]
   // Step 3: Final Stage inside Zone 2 corridor at (14, 8) -> produces targetResult for Goal Star
   if (bestValid && bestValid.steps) {
     const steps = bestValid.steps;
@@ -319,34 +322,34 @@ export function generateRandomStaticMaze(selectedRoutesData, options = {}) {
 
     const f1Col = random() > 0.5 ? 9 : 8;
 
-    if (step0) registerStation(makeStation('st_feeder_0', step0, f1Col, 2, false));
-    if (step1) registerStation(makeStation('st_feeder_1', step1, 11, 4, false));
-    if (step2) registerStation(makeStation('st_bridge_door', step2, 12, 6, false)); // Articulation bridge!
-    if (step3) registerStation(makeStation('st_final_stage', step3, 14, 8, false));
+    if (step0) registerStation(makeStation('st_feeder_0', step0, f1Col, 2, false, null));
+    if (step1) registerStation(makeStation('st_feeder_1', step1, 11, 4, false, 'st_feeder_0'));
+    if (step2) registerStation(makeStation('st_bridge_door', step2, 12, 6, false, 'st_feeder_1')); // Articulation bridge!
+    if (step3) registerStation(makeStation('st_final_stage', step3, 14, 8, false, 'st_bridge_door'));
   }
 
   // Stamp Dead State 1 (Cascading Distractor Route 1 in lower-left sub-maze):
-  // Step 0: 3 + 5 (Premature addition error = 8)
-  // Step 1: ( ) × (3) (Cascading error = 24)
-  // Step 2: ( ) − (10) (Cascading error = 14)
+  // Step 0: 3 + 5 (Premature addition error = 8) [Opening Distractor]
+  // Step 1: ( ) × (3) (Cascading error = 24) [Reveals after st_trap_0]
+  // Step 2: ( ) − (10) (Cascading error = 14) [Reveals after st_trap_1]
   // Step 3: ( ) ÷ (2) (Cascading error = 7) -> Dead End Wall 1!
   if (selectedInvalid && selectedInvalid[0] && selectedInvalid[0].steps) {
     const invSteps = selectedInvalid[0].steps;
-    if (invSteps[0]) registerStation(makeStation('st_trap_0', invSteps[0], 3, 4, true));
-    if (invSteps[1]) registerStation(makeStation('st_trap_1', invSteps[1], 1, 7, true));
-    if (invSteps[2]) registerStation(makeStation('st_trap_2', invSteps[2], 3, 8, true));
-    if (invSteps[3]) registerStation(makeStation('st_trap_3', invSteps[3], 5, 7, true));
+    if (invSteps[0]) registerStation(makeStation('st_trap_0', invSteps[0], 3, 4, true, null));
+    if (invSteps[1]) registerStation(makeStation('st_trap_1', invSteps[1], 1, 7, true, 'st_trap_0'));
+    if (invSteps[2]) registerStation(makeStation('st_trap_2', invSteps[2], 3, 8, true, 'st_trap_1'));
+    if (invSteps[3]) registerStation(makeStation('st_trap_3', invSteps[3], 5, 7, true, 'st_trap_2'));
   }
 
   // Stamp Dead State 2 (Cascading Distractor Route 2 in upper-right sub-maze - NEW!):
-  // Step 1: (3) + (15) (Premature addition before division = 18)
-  // Step 2: (18) − (10) (Cascading error = 8)
+  // Step 1: (3) + (15) (Premature addition before division = 18) [Reveals after st_feeder_0]
+  // Step 2: (18) − (10) (Cascading error = 8) [Reveals after st_trap2_1]
   // Step 3: (8) ÷ (2) (Cascading error = 4) -> Dead End Wall 2!
   if (selectedInvalid && selectedInvalid[1] && selectedInvalid[1].steps) {
     const inv2Steps = selectedInvalid[1].steps;
-    if (inv2Steps[1]) registerStation(makeStation('st_trap2_1', inv2Steps[1], 13, 2, true));
-    if (inv2Steps[2]) registerStation(makeStation('st_trap2_2', inv2Steps[2], 15, 3, true));
-    if (inv2Steps[3]) registerStation(makeStation('st_trap2_3', inv2Steps[3], 13, 4, true));
+    if (inv2Steps[1]) registerStation(makeStation('st_trap2_1', inv2Steps[1], 13, 2, true, 'st_feeder_0'));
+    if (inv2Steps[2]) registerStation(makeStation('st_trap2_2', inv2Steps[2], 15, 3, true, 'st_trap2_1'));
+    if (inv2Steps[3]) registerStation(makeStation('st_trap2_3', inv2Steps[3], 13, 4, true, 'st_trap2_2'));
   }
 
   // =========================================================================
