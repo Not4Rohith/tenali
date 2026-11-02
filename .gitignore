@@ -22,3 +22,8 @@ server/_probe*.js
 *.bak.*
 __pycache__/
 *.pyc
+
+# Graphify knowledge graph outputs
+graphify-out/
+.graphify*
+.graphifyignore
