@@ -31,6 +31,12 @@ import {
 export function findNearbyStation(grid, snake, solvedStationIds = [], calculation = null, expression = null) {
   if (!grid || !snake) return null;
 
+  function isUnlocked(st) {
+    if (!st) return false;
+    if (st.isOpeningState || !st.prerequisiteStationId) return true;
+    return solvedStationIds.includes(st.prerequisiteStationId);
+  }
+
   function isConflicted(st) {
     if (!st || !calculation || !expression) return false;
     return isStationDefunct(st, calculation, expression, grid) || Boolean(checkStationProvenanceConflict(st, calculation, expression)?.hasConflict);
@@ -39,7 +45,7 @@ export function findNearbyStation(grid, snake, solvedStationIds = [], calculatio
   // 1. Check if snake head is directly on an unsolved station cell
   const currentKey = `${snake.c},${snake.r}`;
   const currentStation = grid.stationsByPos && grid.stationsByPos[currentKey];
-  if (currentStation && !solvedStationIds.includes(currentStation.id) && !isConflicted(currentStation)) {
+  if (currentStation && !solvedStationIds.includes(currentStation.id) && isUnlocked(currentStation) && !isConflicted(currentStation)) {
     return currentStation;
   }
 
@@ -51,7 +57,7 @@ export function findNearbyStation(grid, snake, solvedStationIds = [], calculatio
       const next = getNextCell(snake.c, snake.r, dir);
       const key = `${next.c},${next.r}`;
       const station = grid.stationsByPos && grid.stationsByPos[key];
-      if (station && !solvedStationIds.includes(station.id) && !isConflicted(station)) {
+      if (station && !solvedStationIds.includes(station.id) && isUnlocked(station) && !isConflicted(station)) {
         return station;
       }
     }
@@ -420,6 +426,15 @@ export function moveSnake(state, direction) {
   const targetStation = mazeGrid.stationsByPos[cellKey];
   const currentCarriedValues = snake.carriedValues ? [...snake.carriedValues] : (snake.carriedValue !== null ? [snake.carriedValue] : []);
   if (targetStation && !mazeState.solvedStationIds.includes(targetStation.id)) {
+    // Check if station is locked because previous prerequisite state has not been solved
+    if (targetStation.prerequisiteStationId && !mazeState.solvedStationIds.includes(targetStation.prerequisiteStationId)) {
+      return {
+        ...state,
+        conflictAnimation: null,
+        message: '⛔ Path is locked! Solve the previous operation first.'
+      };
+    }
+
     // 5A. Check Token Provenance Conflict (Universal)
     // If ANY raw token required by targetStation was already consumed by an earlier completed operation,
     // that station is defunct / impossible to evaluate and acts as a solid wall!

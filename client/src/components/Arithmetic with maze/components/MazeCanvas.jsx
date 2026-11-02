@@ -77,32 +77,26 @@ function getNextStepDirection(grid, startC, startR, targetC, targetR, snakeSegme
 
 /**
  * Determines whether a mathematical station should be visible to the child.
- * Progressive fog-of-war:
- * - Opening stations (no prerequisite) are visible at start.
- * - Stations whose prerequisite station is solved become revealed.
+ * Progressive state reveal rule:
+ * - Opening stations (no prerequisite) are visible from the start.
+ * - Hidden states MUST NOT appear if the child has not selected and solved the previous state.
  * - Already solved stations remain visible.
- * - Stations within close proximity (Manhattan distance <= 2) to the snake reveal.
+ * - Zero proximity reveal: walking near a corridor will NEVER expose locked/unselected states.
  */
-function isStationVisible(station, solvedStationIds = [], snake = null) {
+function isStationVisible(station, solvedStationIds = []) {
   if (!station) return false;
 
   // 1. Solved stations always stay visible
   if (solvedStationIds.includes(station.id)) return true;
 
-  // 2. Opening stations (prerequisiteStationId is null) are visible at start
+  // 2. Opening stations (no prerequisite) are visible at start
   if (station.isOpeningState || station.prerequisiteStationId === null || station.prerequisiteStationId === undefined) {
     return true;
   }
 
-  // 3. Revealed when its prerequisite station is solved
+  // 3. STRICT REQUIREMENT: Only visible if the previous prerequisite state was solved!
   if (station.prerequisiteStationId && solvedStationIds.includes(station.prerequisiteStationId)) {
     return true;
-  }
-
-  // 4. Proximity reveal if the snake is physically exploring near this corridor
-  if (snake) {
-    const dist = Math.abs(snake.c - station.c) + Math.abs(snake.r - station.r);
-    if (dist <= 2) return true;
   }
 
   return false;
@@ -203,7 +197,7 @@ export function MazeCanvas({
         {/* 3. Mathematical Labels Written Along Corridor Paths */}
         <g className="maze-floor-stations">
           {Object.values(stationsByPos).map((station) => {
-            const isVisible = isStationVisible(station, mazeState.solvedStationIds, snake);
+            const isVisible = isStationVisible(station, mazeState.solvedStationIds);
             if (!isVisible) return null;
 
             const isSolved = mazeState.solvedStationIds.includes(station.id);
