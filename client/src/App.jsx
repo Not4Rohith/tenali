@@ -35,6 +35,8 @@ import ShapeSlicer3D from './ShapeSlicer3D';
 import ShapeTranslatorApp from './ShapeTranslatorApp';
 import NetBuilderApp from './NetBuilderApp';
 import CrossSectionApp from './CrossSectionApp';
+import { SnakeMazeApp } from './components/Arithmetic with maze/SnakeMazeApp.jsx';
+import './components/Arithmetic with maze/index.css';
 
 window.React = React;
 import Home from './components/Home';
@@ -42783,6 +42785,18 @@ function App() {
 
 
 
+  // Route: /maze → BODMAS Interactive Snake Maze
+  if (pathname === '/maze') {
+    return (
+      <>
+        <button className="theme-toggle" onClick={toggleTheme} title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
+          {theme === 'dark' ? '☀️' : '🌙'}
+        </button>
+        <SnakeMazeApp onBack={() => { window.location.href = withBase('/') }} />
+      </>
+    )
+  }
+
   // Route: /profile
   if (pathname === '/profile') {
     return (
@@ -44593,6 +44607,7 @@ function App() {
     geocraft: GeometryApp,
     battle: BattleApp,          // Live fastest-finger duels
     sudoku: SudokuApp,          // 9x9 Sudoku puzzle
+    maze: SnakeMazeApp,         // BODMAS Interactive Snake Maze
 
     'comic-addition': ComicAdditionApp,
     gk: GKApp,                    // General Knowledge
