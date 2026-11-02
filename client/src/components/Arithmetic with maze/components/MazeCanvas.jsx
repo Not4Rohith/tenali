@@ -255,18 +255,6 @@ export function MazeCanvas({ mazeGraph, snake, calculation, mazeState, nearbySta
               strokeLinejoin="round"
             />
           ))}
-
-          {/* Prominent Outer Frame */}
-          <rect
-            x="1.5"
-            y="1.5"
-            width={width - 3}
-            height={height - 3}
-            fill="none"
-            stroke="rgba(85, 165, 237, 0.45)"
-            strokeWidth="2"
-            rx="8"
-          />
         </g>
 
         {/* 7. The Animated Snake Character */}
