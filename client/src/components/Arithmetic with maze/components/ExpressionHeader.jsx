@@ -120,15 +120,6 @@ export function ExpressionHeader({
             ← Back
           </button>
         )}
-        {onReset && (
-          <button
-            onClick={onReset}
-            className="btn-minimal-restart"
-            title="Restart Challenge (Press 'R')"
-          >
-            ↺ Restart
-          </button>
-        )}
       </div>
 
       {/* Prominent, Centered Expression with Two Distinct Rows */}
